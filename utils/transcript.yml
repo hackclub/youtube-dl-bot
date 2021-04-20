@@ -21,3 +21,5 @@ reactions:
   big-file-success: fb-wow
 errors:
   not-yt-link: What is this trickery??? That is not a YouTube link!
+slack-id:
+  bot-channel: C01744EK4BD

@@ -7,9 +7,13 @@ const URL = require('url')
 
 module.exports = async (req, res) => {
   const { challenge, event } = req.body;
-  if (challenge) return await res.json({ challenge });
-  if (event.user === "U0173UBKRV0" || event.channel !== "C01744EK4BD" || event.subtype) {
-    return res.status(200).end();
+  if (challenge) {
+    return await res.json({ challenge });
+  }
+  if (event.user === transcript('slack-id.bot-user') ||
+      event.channel !== transcript('slack-id.bot-channel') ||
+      event.subtype) {
+    return await res.status(200).end();
   }
 
   try {
@@ -38,7 +42,7 @@ module.exports = async (req, res) => {
         react("add", event.channel, event.ts, transcript("reactions.failure")),
         reply(event.channel, event.ts, transcript('errors.not-yt-link')),
       ])
-      return res.status(200).end()
+      return await res.status(200).end()
     }
 
     const videoInfo = ytdl.getInfo(videoId)
@@ -74,7 +78,7 @@ module.exports = async (req, res) => {
         contentType: "video/mp4",
         knownLength: buffer.length,
       });
-      form.append("channels", "C01744EK4BD");
+      form.append("channels", transcript('slack-id.bot-channel'));
       form.append("thread_ts", event.ts);
       form.append('token', process.env.SLACK_BOT_TOKEN)
       form.append(
@@ -97,7 +101,7 @@ module.exports = async (req, res) => {
     } else {
       await fallbackFinished(value)
     }
-    return res.status(200).end()
+    return await res.status(200).end()
   } catch (e) {
     console.error(e)
     await Promise.all([
@@ -106,7 +110,7 @@ module.exports = async (req, res) => {
       react("remove", event.channel, event.ts, transcript('reactions.success')),
       react("add", event.channel, event.ts, transcript('reactions.failure')),
     ])
-    return res.status(200).end()
+    return await res.status(200).end()
   }
 }
 
