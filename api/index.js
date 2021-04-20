@@ -3,54 +3,61 @@ import FormData from "form-data";
 import fetch from "node-fetch";
 const stb = require("@jorgeferrero/stream-to-buffer");
 import transcript from '../utils/transcript'
+import {url as URL} from 'url'
 
 export default async (req, res) => {
   const { challenge, event } = req.body;
   if (challenge) return await res.json({ challenge });
-  if (event.channel !== "C01744EK4BD" || event.subtype)
+  if (event.channel !== "C01744EK4BD" || event.subtype) {
     return res.status(200).end();
-
-  console.log(event);
-  console.log(event.text, event.ts, event.user);
+  }
 
   try {
-    getUrlFromString(event.text);
+    const url = getUrlFromString(event.text)
     await react("add", event.channel, event.ts, transcript('reactions.loading'));
-  } catch {
-    return;
-  }
-  if(event.text.includes('googlevideo.com')){
-    await react("remove", event.channel, event.ts, transcript('reactions.loading'));
-    return;
-  }
-  const url = (getUrlFromString(event.text)).replace('youtu.be/', 'youtube.com/watch?v=');
-  const videoId = url.split("v=")[1];
-  console.log(url, videoId);
-  if (!videoId) {
-    await react("remove", event.channel, event.ts, transcript('reactions.loading'));
-    await react("add", event.channel, event.ts, transcript("reactions.failure"));
-    await reply(
-      event.channel,
-      event.ts,
-      transcript('errors.not-yt-link')
-    );
-  }
 
-  res.status(200).end();
+    let videoId = ''
+    if (url.includes('https://youtu.be')) {
+      // youtube short link
+      videoId = url.replace('https://youtu.be/', '')
+    } else if (url.includes('https://youtube.com/watch?v=')) {
+      // youtube watch link
+      videoId = URL.parse(url).query.v
+    }
 
-  const vid = await ytdl(url);
+    if (!videoId) {
+      await Promise.all([
+        react("remove", event.channel, event.ts, transcript('reactions.loading')),
+        react("add", event.channel, event.ts, transcript("reactions.failure")),
+        reply(event.channel, event.ts, transcript('errors.not-yt-link')),
+      ])
+      return res.status(200).end()
+    }
 
-  const youtubedl_job = stb.streamToBuffer(vid);
-  const thirty_sec_job = new Promise((resolve) => {
-    setTimeout(() => resolve(ytdl.getInfo(videoId)), 30000);
-  });
-  await Promise.race([youtubedl_job, thirty_sec_job]).then(async (value) => {
-    console.log(typeof value.page);
-    if (typeof value.page == "undefined") {
-      const info = await ytdl.getInfo(videoId)
+    const downloadJob = new Promise(async (resolve, reject) => {
+      try {
+        const vid = await ytdl(url)
+        resolve(await stb.streamToBuffer(vid))
+      } catch (e) {
+        reject(e)
+      }
+    })
+    const fallbackJob = new Promise((resolve) => {
+      // this waits 30s for the downloadjob to run, then resolves if the download job hasn't succeeded by then
+      const ytdlTask = ytdl.getInfo(videoId)
+      setTimeout(() => resolve(await ytdlTask), 30000)
+    })
+
+    const downloadFinished = async (buffer) => {
+      await Promise.all([
+        react("remove", event.channel, event.ts, transcript('reactions.loading')),
+        react("add", event.channel, event.ts, transcript('reactions.big-file-success')),
+        reply(event.channel, event.ts, transcript('big-file', {url: value.formats[0]})),
+      ])
+    }
+    const fallbackFinished = async (info) => {
       const vidBuffer = value
       const title = info.videoDetails.title;
-      console.log(info);
       const form = new FormData();
       form.append("file", vidBuffer, {
         filename: title + ".mp4",
@@ -64,23 +71,29 @@ export default async (req, res) => {
         "initial_comment",
         transcript('starting-message', {artist: stringToArtist(videoId)})
       );
-      console.log(form);
-      await fetch("https://slack.com/api/files.upload", {
-        method: "POST",
-        body: form,
-      })
-        .then((r) => r.json())
-        .then((r) => console.log(r));
-
-      await react("remove", event.channel, event.ts, transcript('reactions.loading'));
-      await react("add", event.channel, event.ts, transcript('reactions.success'));
-    } else {
-      await react("remove", event.channel, event.ts, transcript('reactions.loading'));
-      await react("add", event.channel, event.ts, transcript('reactions.big-file-success'));
-      await reply(event.channel, event.ts, transcript('big-file', {url: value.formats[0]}));
+      await Promise.all([
+        fetch("https://slack.com/api/files.upload", {
+          method: "POST",
+          body: form,
+        }),
+        react("remove", event.channel, event.ts, transcript('reactions.loading')),
+        react("add", event.channel, event.ts, transcript('reactions.success')),
+      ])
     }
-  });
-};
+
+    const value = await Promise.race([downloadJob, fallbackJob])
+    if (typeof value.page == "undefined") {
+      await fallbackFinished(value)
+    } else {
+      await downloadFinished(value)
+    }
+  } catch (e) {
+    await Promise.all([
+      react("remove", event.channel, event.ts, transcript('reactions.loading')),
+      react("add", event.channel, event.ts, transcript('reactions.error')),
+    ])
+  }
+}
 
 const stringToArtist = (str) => {
   // we want random artists, but we want it to be deterministic
