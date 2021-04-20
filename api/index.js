@@ -16,6 +16,7 @@ module.exports = async (req, res) => {
     const url = getUrlFromString(event.text)
     await react("add", event.channel, event.ts, transcript('reactions.loading'));
 
+    console.log({url})
     let videoId = ''
     if (url.includes('https://youtu.be')) {
       // youtube short link
@@ -24,6 +25,7 @@ module.exports = async (req, res) => {
       // youtube watch link
       videoId = URL.parse(url).query.v
     }
+    console.log({videoID})
 
     if (!videoId) {
       await Promise.all([
