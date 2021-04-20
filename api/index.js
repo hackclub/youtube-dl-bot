@@ -52,7 +52,7 @@ export default async (req, res) => {
       await Promise.all([
         react("remove", event.channel, event.ts, transcript('reactions.loading')),
         react("add", event.channel, event.ts, transcript('reactions.big-file-success')),
-        reply(event.channel, event.ts, transcript('big-file', {url: value.formats[0]})),
+        reply(event.channel, event.ts, transcript('big-file', {url: JSON.stringify(value.formats[0])})),
       ])
     }
     const fallbackFinished = async (info) => {
