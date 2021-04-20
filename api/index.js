@@ -54,6 +54,7 @@ export default async (req, res) => {
       });
       form.append("channels", "C01744EK4BD");
       form.append("thread_ts", event.ts);
+      form.append('token', process.env.SLACK_BOT_TOKEN)
       form.append(
         "initial_comment",
         `Oui ouiiii. This reminds me of a Rembrandt I once stole. This must be worth 10,000gp.`
