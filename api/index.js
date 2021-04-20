@@ -2,6 +2,7 @@ import ytdl from "ytdl-core";
 import FormData from "form-data";
 import fetch from "node-fetch";
 const stb = require("@jorgeferrero/stream-to-buffer");
+import transcript from '../utils/transcript'
 
 export default async (req, res) => {
   const { challenge, event } = req.body;
@@ -14,24 +15,24 @@ export default async (req, res) => {
 
   try {
     getUrlFromString(event.text);
-    await react("add", event.channel, event.ts, "beachball");
+    await react("add", event.channel, event.ts, transcript('reactions.loading'));
   } catch {
     return;
   }
   if(event.text.includes('googlevideo.com')){
-    await react("remove", event.channel, event.ts, "beachball");
+    await react("remove", event.channel, event.ts, transcript('reactions.loading'));
     return;
   }
   const url = (getUrlFromString(event.text)).replace('youtu.be/', 'youtube.com/watch?v=');
   const videoId = url.split("v=")[1];
   console.log(url, videoId);
   if (!videoId) {
-    await react("remove", event.channel, event.ts, "beachball");
-    await react("add", event.channel, event.ts, "x");
+    await react("remove", event.channel, event.ts, transcript('reactions.loading'));
+    await react("add", event.channel, event.ts, transcript("reactions.failure"));
     await reply(
       event.channel,
       event.ts,
-      `What is this trickery??? That is not a YouTube link!`
+      transcript('errors.not-yt-link')
     );
   }
 
@@ -61,7 +62,7 @@ export default async (req, res) => {
       form.append('token', process.env.SLACK_BOT_TOKEN)
       form.append(
         "initial_comment",
-        `Oui ouiiii. This reminds me of a Rembrandt I once stole. This must be worth 10,000gp.`
+        transcript('starting-message', {artist: stringToArtist(videoId)})
       );
       console.log(form);
       await fetch("https://slack.com/api/files.upload", {
@@ -71,15 +72,29 @@ export default async (req, res) => {
         .then((r) => r.json())
         .then((r) => console.log(r));
 
-      await react("remove", event.channel, event.ts, "beachball");
-      await react("add", event.channel, event.ts, "youtube");
+      await react("remove", event.channel, event.ts, transcript('reactions.loading'));
+      await react("add", event.channel, event.ts, "success");
     } else {
-      await react("remove", event.channel, event.ts, "beachball");
-      await react("add", event.channel, event.ts, "fb-wow");
-      await reply(event.channel, event.ts, `Sooooooo BIG! but do not stress! i have a friend who has big enough hands to capture this masterpiece: <${value.formats[0]['url']}|Nic Nicosia>. FYI: He has a flight in six hours and will bin the masterpiece right before it :(`);
+      await react("remove", event.channel, event.ts, transcript('reactions.loading'));
+      await react("add", event.channel, event.ts, transcript('reactions.big-file-success'));
+      await reply(event.channel, event.ts, transcript('big-file', {url: value.formats[0]}));
     }
   });
 };
+
+const stringToArtist = (str) => {
+  // we want random artists, but we want it to be deterministic
+  // ex. https://youtu.be/wH4QsKQPYKQ shouldn't be assigned "Picasso" once, then "Warhol" the next
+  // one input 'str' should always return the same artist
+
+  // First we'll turn the 'str' into a number (arbitrary, but deterministic)
+  const strWeight = str.split('').map(l => l.charCodeAt(0)).reduce((a,b) => a + b, 0)
+  const { array: artistArray } = transcript('artists')
+  // Then choose an artist from the array with the index of our 'strWeight'
+  const chosenArtist = artistArray[strWeight % artistArray.length]
+
+  return chosenArtist
+}
 
 const getUrlFromString = (str) => {
   const urlRegex = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gi;

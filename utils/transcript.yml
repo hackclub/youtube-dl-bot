@@ -1,0 +1,23 @@
+artists:
+  array: # this is intentionally nested twice-- see stringToArtist() for usage
+    - Warhol
+    - Picasso
+    - van Gogh
+    - Matisse
+    - Pollock painting
+    - Munch
+    - Frank Lloyd Wright building
+    - Rembrandt
+    - Escher
+starting-message: Oui ouiiii. This reminds me of a ${this.artist} I once stole. This must be worth 10,000gp.
+big-file: >
+  Sooooooo BIG! but do not stress! i have a friend who has big enough hands
+  to capture this masterpiece: <${this.url}|Nic Nicosia>. FYI: He has a
+  flight in six hours and will bin the masterpiece right before it :(
+reactions:
+  loading: beachball
+  failure: x
+  success: youtube
+  big-file-success: fb-wow
+errors:
+  not-yt-link: What is this trickery??? That is not a YouTube link!
