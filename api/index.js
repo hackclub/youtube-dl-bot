@@ -8,26 +8,31 @@ const URL = require('url')
 module.exports = async (req, res) => {
   const { challenge, event } = req.body;
   if (challenge) return await res.json({ challenge });
-  if (event.channel !== "C01744EK4BD" || event.subtype) {
+  if (event.user === "U0173UBKRV0" || event.channel !== "C01744EK4BD" || event.subtype) {
     return res.status(200).end();
   }
 
   try {
+    console.log(event.text)
     const url = getUrlFromString(event.text)
     await react("add", event.channel, event.ts, transcript('reactions.loading'));
 
-    console.log({url})
-    let videoId = ''
-    if (url.includes('https://youtu.be')) {
+    let videoId
+    const parsedUrl = URL.parse(url)
+    if (parsedUrl.hostname.includes('youtu.be')) {
       // youtube short link
-      videoId = url.replace('https://youtu.be/', '')
-    } else if (url.includes('https://youtube.com/watch?v=')) {
+      videoId = parsedUrl.pathname.replace('/','')
+    } else if (parsedUrl.hostname.includes('youtube.com')) {
       // youtube watch link
-      videoId = URL.parse(url).query.v
+      const queryHash = {}
+      parsedUrl.query.split('&').forEach(entity => {
+        let [k, ...v] = entity.split('=')
+        queryHash[k] = v.join('=')
+      })
+      videoId = queryHash.v
     }
-    console.log({videoID})
 
-    if (!videoId) {
+    if (videoId == undefined) {
       await Promise.all([
         react("remove", event.channel, event.ts, transcript('reactions.loading')),
         react("add", event.channel, event.ts, transcript("reactions.failure")),
@@ -36,35 +41,38 @@ module.exports = async (req, res) => {
       return res.status(200).end()
     }
 
+    const videoInfo = ytdl.getInfo(videoId)
+
+    const fallbackJob = new Promise((resolve) => {
+      // this waits 30s for the downloadjob to run, then resolves if the download job hasn't succeeded by then
+      setTimeout(() => {videoInfo.then(resolve)}, 30 * 1000)
+    })
+
     const downloadJob = new Promise(async (resolve, reject) => {
       try {
         const vid = await ytdl(url)
         resolve(await stb.streamToBuffer(vid))
       } catch (e) {
+        console.error(e)
         reject(e)
       }
     })
-    const fallbackJob = new Promise((resolve) => {
-      // this waits 30s for the downloadjob to run, then resolves if the download job hasn't succeeded by then
-      const ytdlTask = ytdl.getInfo(videoId)
-      setTimeout(() => {ytdlTask.then(resolve)}, 30000)
-    })
 
-    const downloadFinished = async (buffer) => {
+    const fallbackFinished = async (info) => {
+      const { url } = info.formats[0]
       await Promise.all([
         react("remove", event.channel, event.ts, transcript('reactions.loading')),
         react("add", event.channel, event.ts, transcript('reactions.big-file-success')),
-        reply(event.channel, event.ts, transcript('big-file', {url: JSON.stringify(value.formats[0])})),
+        reply(event.channel, event.ts, transcript('big-file', {url})),
       ])
     }
-    const fallbackFinished = async (info) => {
-      const vidBuffer = value
-      const title = info.videoDetails.title;
+    const downloadFinished = async (buffer) => {
+      const title = (await videoInfo).videoDetails.title;
       const form = new FormData();
-      form.append("file", vidBuffer, {
+      form.append("file", buffer, {
         filename: title + ".mp4",
         contentType: "video/mp4",
-        knownLength: vidBuffer.length,
+        knownLength: buffer.length,
       });
       form.append("channels", "C01744EK4BD");
       form.append("thread_ts", event.ts);
@@ -84,16 +92,21 @@ module.exports = async (req, res) => {
     }
 
     const value = await Promise.race([downloadJob, fallbackJob])
-    if (typeof value.page == "undefined") {
-      await fallbackFinished(value)
-    } else {
+    if (Buffer.isBuffer(value)) {
       await downloadFinished(value)
+    } else {
+      await fallbackFinished(value)
     }
+    return res.status(200).end()
   } catch (e) {
+    console.error(e)
     await Promise.all([
       react("remove", event.channel, event.ts, transcript('reactions.loading')),
-      react("add", event.channel, event.ts, transcript('reactions.error')),
+      react("remove", event.channel, event.ts, transcript('reactions.big-file-success')),
+      react("remove", event.channel, event.ts, transcript('reactions.success')),
+      react("add", event.channel, event.ts, transcript('reactions.failure')),
     ])
+    return res.status(200).end()
   }
 }
 
