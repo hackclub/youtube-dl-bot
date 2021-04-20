@@ -25,44 +25,29 @@ export default async (req, res) => {
   }
 
   res.status(200).end()
+  const vid = await ytdl(url)
+  const vidBuffer = await stb.streamToBuffer(vid)
 
-  const vid = await ytdl(url);
+  const info = await ytdl.getInfo(videoId)
+  const title = info.videoDetails.title
 
-  const youtubedl_job = stb.streamToBuffer(vid);
-  const thirty_sec_job = new Promise((resolve) => {
-    setTimeout(() => resolve(ytdl.getInfo(videoId)), 30000);
-  });
-  await Promise.race([youtubedl_job, thirty_sec_job]).then((value) => {
-    console.log(typeof value.page);
-    if( typeof value.page == "undefined"){
-      const title = info.videoDetails.title;
-      console.log(info);
-      const form = new FormData();
-      form.append("file", vidBuffer, {
-        filename: title + ".mp4",
-        contentType: "video/mp4",
-        knownLength: vidBuffer.length,
-      });
-      form.append("channels", "C01744EK4BD");
-      form.append('thread_ts', event.ts)
-      form.append(
-        "initial_comment",
-        `Oui ouiiii. This reminds me of a Rembrandt I once stole. This must be worth 10,000gp.`
-      );
-      console.log(form);
-      await fetch('https://slack.com/api/files.upload', {
-        method: 'POST',
-        body: form
-      }).then(r => r.json()).then(r => console.log(r))
-    
-      await react('remove', event.channel, event.ts, 'beachball')
-      await react('add', event.channel, event.ts, 'youtube')
-    }
-    else{
-      await react('add', event.channel, event.ts, 'x')
-      await reply(event.channel, event.ts, `Sooooooo BIG!`)
-    }
-  });
+  const form = new FormData()
+  form.append('file', vidBuffer, {
+    filename: title + '.mp4',
+    contentType: 'video/mp4',
+    knownLength: vidBuffer.length
+  })
+  form.append('channels', 'C01744EK4BD')
+  form.append('thread_ts', event.ts)
+  form.append('initial_comment', `Oui ouiiii. This reminds me of a Rembrandt I once stole. This must be worth 10,000gp.`)
+  form.append('token', process.env.SLACK_BOT_TOKEN)
+  await fetch('https://slack.com/api/files.upload', {
+    method: 'POST',
+    body: form
+  }).then(r => r.json()).then(r => console.log(r))
+
+  await react('remove', event.channel, event.ts, 'beachball')
+  await react('add', event.channel, event.ts, 'youtube')
 }
 
 const getUrlFromString = (str) => {
