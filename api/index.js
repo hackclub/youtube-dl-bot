@@ -73,7 +73,7 @@ export default async (req, res) => {
         .then((r) => console.log(r));
 
       await react("remove", event.channel, event.ts, transcript('reactions.loading'));
-      await react("add", event.channel, event.ts, "success");
+      await react("add", event.channel, event.ts, transcript('reactions.success'));
     } else {
       await react("remove", event.channel, event.ts, transcript('reactions.loading'));
       await react("add", event.channel, event.ts, transcript('reactions.big-file-success'));
