@@ -22,7 +22,7 @@ export default async (req, res) => {
     await react("remove", event.channel, event.ts, "beachball");
     return;
   }
-  const url = getUrlFromString(event.text);
+  const url = (getUrlFromString(event.text)).replace('youtu.be/', 'youtube.com/watch?v=');
   const videoId = url.split("v=")[1];
   console.log(url, videoId);
   if (!videoId) {
