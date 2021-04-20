@@ -18,6 +18,9 @@ export default async (req, res) => {
   } catch {
     return;
   }
+  if(event.text.includes('googlevideo.com')){
+    return;
+  }
   const url = getUrlFromString(event.text);
   const videoId = url.split("v=")[1];
   console.log(url, videoId);
@@ -71,8 +74,8 @@ export default async (req, res) => {
       await react("add", event.channel, event.ts, "youtube");
     } else {
       await react("remove", event.channel, event.ts, "beachball");
-      await react("add", event.channel, event.ts, "x");
-      await reply(event.channel, event.ts, `Sooooooo BIG! but do not stress! i have a friend who has big enough hands to capture this masterpiece: ${value.formats[0]['url']}. FYI: He has a flight in six hours and will bin the masterpiece right before it :(`);
+      await react("add", event.channel, event.ts, "fb-wow");
+      await reply(event.channel, event.ts, `Sooooooo BIG! but do not stress! i have a friend who has big enough hands to capture this masterpiece: <${value.formats[0]['url']}}|Nic Nicosia>. FYI: He has a flight in six hours and will bin the masterpiece right before it :(`);
     }
   });
 };
