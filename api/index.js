@@ -42,6 +42,7 @@ export default async (req, res) => {
   await Promise.race([youtubedl_job, thirty_sec_job]).then(async (value) => {
     console.log(typeof value.page);
     if (typeof value.page == "undefined") {
+      const info = await ytdl.getInfo(videoId)
       const title = info.videoDetails.title;
       console.log(info);
       const form = new FormData();
