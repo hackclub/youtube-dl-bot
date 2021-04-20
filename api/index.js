@@ -45,7 +45,7 @@ module.exports = async (req, res) => {
     const fallbackJob = new Promise((resolve) => {
       // this waits 30s for the downloadjob to run, then resolves if the download job hasn't succeeded by then
       const ytdlTask = ytdl.getInfo(videoId)
-      setTimeout(() => resolve(await ytdlTask), 30000)
+      setTimeout(() => {ytdlTask.then(resolve)}, 30000)
     })
 
     const downloadFinished = async (buffer) => {
