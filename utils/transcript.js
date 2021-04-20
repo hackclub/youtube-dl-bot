@@ -104,4 +104,4 @@ const evalTranscript = (target, vars = {}) => (
   })
 )
 
-export default transcript
+module.exports = transcript

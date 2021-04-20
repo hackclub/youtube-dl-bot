@@ -3,7 +3,7 @@ import FormData from "form-data";
 import fetch from "node-fetch";
 const stb = require("@jorgeferrero/stream-to-buffer");
 
-export default async (req, res) => {
+module.exports = async (req, res) => {
   try {
     getUrlFromString("https://www.youtube.com/watch?v=ntIFyvGdGMQ");
     //await react('add', event.channel, event.ts, 'beachball')

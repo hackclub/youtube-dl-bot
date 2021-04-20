@@ -5,7 +5,7 @@ const stb = require("@jorgeferrero/stream-to-buffer");
 const transcript = require('../utils/transcript')
 const URL = require('url')
 
-export default async (req, res) => {
+module.exports = async (req, res) => {
   const { challenge, event } = req.body;
   if (challenge) return await res.json({ challenge });
   if (event.channel !== "C01744EK4BD" || event.subtype) {
