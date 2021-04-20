@@ -144,9 +144,7 @@ const react = async (addOrRemove, channel, ts, reaction) =>
       Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}`,
     },
     body: JSON.stringify({ channel: channel, name: reaction, timestamp: ts }),
-  })
-    .then((r) => r.json())
-    .catch((err) => console.error(err));
+  }).catch((err) => console.error(err));
 
 const reply = async (channel, parentTs, text, unfurl) =>
   await fetch("https://slack.com/api/chat.postMessage", {
@@ -163,6 +161,4 @@ const reply = async (channel, parentTs, text, unfurl) =>
       unfurl_links: unfurl,
       unfurl_media: false,
     }),
-  })
-    .then((r) => r.json())
-    .then((json) => json.ts);
+  }).catch((err) => console.error(err));
