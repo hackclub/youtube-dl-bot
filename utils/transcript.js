@@ -94,7 +94,7 @@ function hydrateObj(obj, vars = {}) {
     return obj
   }
 }
-function evalTranscript (target, vars = {}) (
+const evalTranscript = (target, vars = {}) => (
   function () {
     return eval('`' + target + '`')
   }.call({
