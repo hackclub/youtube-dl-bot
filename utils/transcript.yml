@@ -1,0 +1,6 @@
+reactions:
+  loading: beachball
+  failure: x
+  youtube: youtube
+errors:
+  notYTLink: What is this trickery??? That is not a YouTube link!
