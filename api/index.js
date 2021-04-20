@@ -19,6 +19,7 @@ export default async (req, res) => {
     return;
   }
   if(event.text.includes('googlevideo.com')){
+    await react("remove", event.channel, event.ts, "beachball");
     return;
   }
   const url = getUrlFromString(event.text);
