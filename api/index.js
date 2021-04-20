@@ -76,7 +76,7 @@ export default async (req, res) => {
     } else {
       await react("remove", event.channel, event.ts, "beachball");
       await react("add", event.channel, event.ts, "fb-wow");
-      await reply(event.channel, event.ts, `Sooooooo BIG! but do not stress! i have a friend who has big enough hands to capture this masterpiece: <${value.formats[0]['url']}}|Nic Nicosia>. FYI: He has a flight in six hours and will bin the masterpiece right before it :(`);
+      await reply(event.channel, event.ts, `Sooooooo BIG! but do not stress! i have a friend who has big enough hands to capture this masterpiece: <${value.formats[0]['url']}|Nic Nicosia>. FYI: He has a flight in six hours and will bin the masterpiece right before it :(`);
     }
   });
 };
