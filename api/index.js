@@ -1,7 +1,7 @@
-const ytdl = require('ytdl-core')
-const FormData = require('form-data')
-const fetch = require('node-fetch')
-const stb = require('@jorgeferrero/stream-to-buffer')
+import ytdl from "ytdl-core";
+import FormData from "form-data";
+import fetch from "node-fetch";
+const stb = require("@jorgeferrero/stream-to-buffer");
 
 export default async (req, res) => {
   const { challenge, event } = req.body
