@@ -11,16 +11,23 @@ module.exports = async (req, res) => {
   if (challenge) {
     return await res.json({ challenge });
   }
+  // return 200 to prevent slack retries
+  res.status(200).end();
   if (event.user === transcript('slack-id.bot-user') ||
       event.channel !== transcript('slack-id.bot-channel') ||
       event.subtype) {
-    return await res.status(200).end();
+        return null
+  }
+
+  let url
+  try {
+    url = getUrlFromString(event.text)
+  } catch (e) {
+    return null
   }
 
   try {
-    console.log(event.text)
-    const url = getUrlFromString(event.text)
-    await react("add", event.channel, event.ts, transcript('reactions.loading'));
+    const loadingEmoji = react("add", event.channel, event.ts, transcript('reactions.loading'));
 
     let videoId
     const parsedUrl = URL.parse(url)
@@ -38,12 +45,13 @@ module.exports = async (req, res) => {
     }
 
     if (videoId == undefined) {
+      await loadingEmoji
       await Promise.all([
         react("remove", event.channel, event.ts, transcript('reactions.loading')),
         react("add", event.channel, event.ts, transcript("reactions.failure")),
         reply(event.channel, event.ts, transcript('errors.not-yt-link')),
       ])
-      return await res.status(200).end()
+      return null
     }
 
     const videoInfo = ytdl.getInfo(videoId)
@@ -65,6 +73,7 @@ module.exports = async (req, res) => {
 
     const fallbackFinished = async (info) => {
       const { url } = info.formats[0]
+      await loadingEmoji
       await Promise.all([
         react("remove", event.channel, event.ts, transcript('reactions.loading')),
         react("add", event.channel, event.ts, transcript('reactions.big-file-success')),
@@ -86,6 +95,7 @@ module.exports = async (req, res) => {
         "initial_comment",
         transcript('starting-message', {artist: stringToArtist(videoId)})
       );
+      await loadingEmoji
       await Promise.all([
         fetch("https://slack.com/api/files.upload", {
           method: "POST",
@@ -102,7 +112,7 @@ module.exports = async (req, res) => {
     } else {
       await fallbackFinished(value)
     }
-    return await res.status(200).end()
+    return null
   } catch (e) {
     console.error(e)
     await Promise.all([
@@ -111,7 +121,7 @@ module.exports = async (req, res) => {
       react("remove", event.channel, event.ts, transcript('reactions.success')),
       react("add", event.channel, event.ts, transcript('reactions.failure')),
     ])
-    return await res.status(200).end()
+    return null
   }
 }
 
