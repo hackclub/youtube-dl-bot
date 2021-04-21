@@ -2,8 +2,9 @@ const express = require('express')
 const app = express()
 app.use(express.urlencoded())
 
-app.get('/api', (req, res) => {
-  require('./api/index')(req, res)
+app.get('/api', async (req, res) => {
+  console.log('/api hi!')
+  await require('./api/index')(req, res)
 })
 
 const PORT = process.env.PORT || 0
