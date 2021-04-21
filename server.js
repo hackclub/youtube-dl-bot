@@ -4,13 +4,11 @@ const app = express()
 app.use(express.urlencoded({extended: true}))
 app.use(express.json())
 
-app.get('/', (req, res) => {
+app.all('/', (req, res) => {
   res.json({ping: 'pong'})
 })
-app.get('/api', async (req, res) => {
-  console.log('/api hi!')
-  await require('./api/index')(req, res)
-})
+
+app.all('/api', require('./api/index'))
 
 const PORT = process.env.PORT || 0
 const HOST = '0.0.0.0'
