@@ -19,17 +19,9 @@ module.exports = async (req, res) => {
         return null
   }
 
-  let url
+  let url, videoId
   try {
     url = getUrlFromString(event.text)
-  } catch (e) {
-    return null
-  }
-
-  try {
-    const loadingEmoji = react("add", event.channel, event.ts, transcript('reactions.loading'));
-
-    let videoId
     const parsedUrl = URL.parse(url)
     if (parsedUrl.hostname.includes('youtu.be')) {
       // youtube short link
@@ -43,16 +35,16 @@ module.exports = async (req, res) => {
       })
       videoId = queryHash.v
     }
+  } catch (e) {
+    console.log('no url found, skipping')
+    return null
+  }
 
+  try {
     if (videoId == undefined) {
-      await loadingEmoji
-      await Promise.all([
-        react("remove", event.channel, event.ts, transcript('reactions.loading')),
-        react("add", event.channel, event.ts, transcript("reactions.failure")),
-        reply(event.channel, event.ts, transcript('errors.not-yt-link')),
-      ])
       return null
     }
+    const loadingEmoji = react("add", event.channel, event.ts, transcript('reactions.loading'));
 
     const videoInfo = ytdl.getInfo(videoId)
 
