@@ -7,7 +7,7 @@ const URL = require('url')
 
 module.exports = async (req, res) => {
   const { challenge, event } = req.body;
-  console.log({req})
+  
   if (challenge) {
     return await res.json({ challenge });
   }
